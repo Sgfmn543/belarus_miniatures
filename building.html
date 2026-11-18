@@ -55,8 +55,8 @@
     if (!items.length) return "";
     return "<h2 style='margin-top:32px;font-size:1.4rem'>" + esc(title) + '</h2><div class="gallery">' +
       items.map(function (p) {
-        return '<figure><button type="button" data-src="' + esc(p.src) + '"><img loading="lazy" src="' + esc(p.src) +
-          '" alt="' + esc(p.caption || b.name) + '"></button>' +
+        return '<figure><button type="button" data-src="' + esc(p.src) + '"><img src="' + esc(p.src) +
+          '" alt="' + esc(p.caption || b.name) + '" onerror="dropPhoto(this)"></button>' +
           (p.caption ? "<figcaption>" + esc(p.caption) + "</figcaption>" : "") + "</figure>";
       }).join("") + "</div>";
   }
@@ -64,6 +64,21 @@
   var prev = BUILDINGS[(idx + BUILDINGS.length - 1) % BUILDINGS.length];
   var next = BUILDINGS[(idx + 1) % BUILDINGS.length];
   var noPhotos = !photoList(b.photos).length && !photoList(b.archive).length;
+
+  // Если файла фото нет, убираем его; если не осталось ни одного, показываем «скоро появятся»
+  window.dropPhoto = function (img) {
+    var fig = img.closest("figure"), g = fig.parentNode;
+    fig.remove();
+    if (!g.querySelector("figure")) {
+      var h2 = g.previousElementSibling;
+      g.remove();
+      if (h2 && h2.tagName === "H2") h2.remove();
+    }
+    if (!document.querySelector(".gallery")) {
+      var n = document.getElementById("nophotos");
+      if (n) n.hidden = false;
+    }
+  };
 
   app.innerHTML =
     '<div class="crumbs"><a href="index.html#miniatures">← Все миниатюры</a></div>' +
@@ -74,7 +89,7 @@
     '<div class="b-text"><p>' + esc(b.desc) + "</p></div>" +
     gallery("Фотографии", b.photos) +
     gallery("Архивные фотографии", b.archive) +
-    (noPhotos ? '<p class="note">Фотографии этого здания скоро появятся.</p>' : "") +
+    '<p class="note" id="nophotos"' + (noPhotos ? "" : " hidden") + '>Фотографии этого здания скоро появятся.</p>' +
     '<div class="pn"><a class="btn" href="' + buildingUrl(prev) + '">← ' + esc(prev.name) +
     '</a><a class="btn" href="' + buildingUrl(next) + '">' + esc(next.name) + " →</a></div>";
 
