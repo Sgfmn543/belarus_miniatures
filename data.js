@@ -103,9 +103,9 @@ const BUILDINGS = [
 
 // Планируемые миниатюры (ПРИМЕР – замените на свои варианты).
 const PLANNED = [
-  { id: "nesvizh", name: "Несвижский замок", note: "Резиденция Радзивиллов, объект ЮНЕСКО" },
-  { id: "brest-fortress", name: "Брестская крепость", note: "Холмские ворота и мемориальный комплекс" },
-  { id: "sofia-polotsk", name: "Софийский собор в Полоцке", note: "Один из древнейших храмов Беларуси" }
+  { id: "nesvizh", name: "Несвижский замок", note: "Резиденция Радзивиллов, объект ЮНЕСКО", cover: "img/planned/nesvizh.jpg" },
+  { id: "brest-fortress", name: "Брестская крепость", note: "Холмские ворота и мемориальный комплекс", cover: "img/planned/brest-fortress.jpg" },
+  { id: "sofia-polotsk", name: "Софийский собор в Полоцке", note: "Один из древнейших храмов Беларуси", cover: "img/planned/sofia-polotsk.jpg" }
 ];
 
 const STATUS_LABEL = { exists: "Сохранился", lost: "Утрачен", restored: "Восстановлен", ruins: "Частично руины" };
