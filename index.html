@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Беларусь в масштабе – парк миниатюр</title>
+<meta name="description" content="Парк миниатюр «Беларусь в масштабе»: архитектурные памятники страны, поиск по названию и планируемые миниатюры.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">Беларусь в масштабе</a>
+    <nav>
+      <a href="#miniatures">Миниатюры</a>
+      <a href="#planned">Планируются</a>
+      <a href="#about">О проекте</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>Беларусь в масштабе</h1>
+      <p>Парк миниатюр архитектурных памятников Беларуси: сохранившихся, восстановленных и утраченных.</p>
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
+
+  <section class="block" id="miniatures">
+    <div class="wrap">
+      <h2>Миниатюры</h2>
+      <div class="tools">
+        <input id="q" type="search" placeholder="Поиск по названию, городу, году" aria-label="Поиск по названию" autocomplete="off">
+        <select id="city" aria-label="Город"></select>
+        <select id="status" aria-label="Состояние"></select>
+      </div>
+      <p class="count" id="count" aria-live="polite"></p>
+      <div class="grid" id="grid"></div>
+      <p class="empty" id="empty" hidden>Ничего не найдено. Попробуйте другое название.</p>
+    </div>
+  </section>
+
+  <section class="block planned" id="planned">
+    <div class="wrap">
+      <h2>Планируются в будущем</h2>
+      <p class="lead">Эти миниатюры планируется добавить в парк. Выберите те, которые вы хотели бы увидеть в первую очередь (можно несколько).</p>
+      <div class="grid" id="plannedGrid"></div>
+      <p id="formWrap" hidden style="margin-top:18px"><a class="btn primary" id="formLink" target="_blank" rel="noopener">Проголосовать</a></p>
+      <p class="note" id="voteNote" hidden></p>
+    </div>
+  </section>
+
+  <section class="block about" id="about">
+    <div class="wrap">
+      <h2>О проекте</h2>
+      <div id="aboutText" style="margin-top:12px"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Беларусь в масштабе · парк миниатюр</div>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  // ----- Статистика -----
+  var cities = {};
+  BUILDINGS.forEach(function (b) { cities[b.city] = 1; });
+  var lost = BUILDINGS.filter(function (b) { return b.status === "lost"; }).length;
+  $("#stats").innerHTML =
+    "<div><b>" + BUILDINGS.length + "</b><span>миниатюр</span></div>" +
+    "<div><b>" + Object.keys(cities).length + "</b><span>городов и посёлков</span></div>" +
+    "<div><b>" + lost + "</b><span>утраченных зданий</span></div>";
+
+  // ----- Фильтры -----
+  var citySel = $("#city"), statusSel = $("#status");
+  citySel.innerHTML = '<option value="">Все города</option>' +
+    Object.keys(cities).map(function (c) { return '<option>' + esc(c) + "</option>"; }).join("");
+  statusSel.innerHTML = '<option value="">Любое состояние</option>' +
+    Object.keys(STATUS_LABEL).map(function (k) {
+      return '<option value="' + k + '">' + esc(STATUS_LABEL[k]) + "</option>";
+    }).join("");
+
+  function render() {
+    var tokens = norm($("#q").value).split(/\s+/).filter(Boolean);
+    var list = BUILDINGS.filter(function (b) {
+      if (citySel.value && b.city !== citySel.value) return false;
+      if (statusSel.value && b.status !== statusSel.value) return false;
+      var hay = norm([b.name, b.city, b.year, b.style, b.desc].join(" "));
+      return tokens.every(function (t) { return hay.indexOf(t) !== -1; });
+    });
+    $("#grid").innerHTML = list.map(function (b) {
+      return '<a class="card" href="' + buildingUrl(b) + '">' + coverHTML(b) +
+        '<div class="body">' + badgeHTML(b) + "<h3>" + esc(b.name) + "</h3>" +
+        '<p class="meta">' + esc(metaLine(b)) + "</p></div></a>";
+    }).join("");
+    $("#empty").hidden = list.length > 0;
+    $("#count").textContent = "Показано " + list.length + " из " + BUILDINGS.length;
+  }
+  $("#q").addEventListener("input", render);
+  citySel.addEventListener("change", render);
+  statusSel.addEventListener("change", render);
+  render();
+
+  // ----- Планируемые миниатюры и голосование -----
+  var KEY = "bim_votes_v1";
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; }
+  }
+  function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
+  var mine = load();
+  var useForm = typeof VOTE_FORM_URL === "string" && VOTE_FORM_URL.trim() !== "";
+
+  function renderPlanned() {
+    $("#plannedGrid").innerHTML = PLANNED.map(function (p) {
+      var cover = '<div class="cover"><span class="ph" aria-hidden="true">' + esc(p.name.charAt(0)) + "</span>" +
+        (p.cover ? '<img loading="lazy" src="' + esc(p.cover) + '" alt="' + esc(p.name) + '" onerror="this.remove()">' : "") + "</div>";
+      var btn = useForm ? "" :
+        '<button class="vote-btn" type="button" data-id="' + esc(p.id) + '" aria-pressed="' +
+        (mine.indexOf(p.id) !== -1) + '">' + (mine.indexOf(p.id) !== -1 ? "Выбрано" : "Хочу увидеть") + "</button>";
+      return '<div class="card">' + cover + '<div class="body"><h3>' + esc(p.name) + "</h3><p>" +
+        esc(p.note || "") + "</p>" + btn + "</div></div>";
+    }).join("");
+  }
+  renderPlanned();
+
+  if (useForm) {
+    $("#formWrap").hidden = false;
+    $("#formLink").href = VOTE_FORM_URL;
+  } else {
+    $("#voteNote").hidden = false;
+    $("#voteNote").textContent = "Ваш выбор сохраняется только в этом браузере. Общий подсчёт голосов подключается через форму (см. README).";
+  }
+
+  $("#plannedGrid").addEventListener("click", function (e) {
+    var b = e.target.closest(".vote-btn");
+    if (!b) return;
+    var id = b.getAttribute("data-id"), i = mine.indexOf(id);
+    if (i === -1) mine.push(id); else mine.splice(i, 1);
+    save(mine);
+    renderPlanned();
+  });
+
+  // ----- О проекте -----
+  $("#aboutText").innerHTML = ABOUT.map(function (t) { return "<p>" + esc(t) + "</p>"; }).join("");
+})();
+</script>
+</body>
+</html>

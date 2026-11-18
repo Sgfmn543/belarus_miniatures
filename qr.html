@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR-коды и таблички – Беларусь в масштабе</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="style.css">
+<style>
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:20px 0}
+  .panel label{display:block;font-weight:600;margin-bottom:6px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row input{flex:1 1 300px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-height:44px}
+  .warn{color:var(--red);font-size:.9rem;margin:10px 0 0}
+  .plaques{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:40px}
+  .plaque{display:grid;grid-template-columns:1fr 130px;gap:14px;background:#fff;color:#111;border:1px solid #cfcab9;border-radius:12px;padding:16px;break-inside:avoid;page-break-inside:avoid}
+  .pl-brand{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#666}
+  .plaque h3{font-size:1.1rem;margin:4px 0 2px;color:#111}
+  .pl-meta{font-size:.8rem;color:#555;margin-bottom:6px}
+  .plaque p{margin:0;font-size:.85rem;line-height:1.4}
+  .pl-qr{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+  .pl-qr svg{width:130px;height:130px;display:block}
+  .pl-qr small{font-size:.65rem;color:#555;line-height:1.2;word-break:break-all}
+  .pl-actions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+  .pl-actions .btn{min-height:36px;padding:6px 12px;font-size:.85rem;color:#1f5c45;border-color:#1f5c45}
+  @page{margin:10mm}
+  @media print{
+    body{background:#fff}
+    .top,footer,.panel,.pl-actions,.crumbs,.hero{display:none!important}
+    .plaques{grid-template-columns:1fr 1fr;gap:8mm}
+    .plaque{border:1px solid #000}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">Беларусь в масштабе</a>
+    <nav><a href="index.html">На сайт</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero" style="padding:36px 0 0">
+    <h1 style="font-size:2rem">QR-коды и таблички</h1>
+    <p>Эта страница нужна только вам. Введите адрес опубликованного сайта, и она создаст QR-код сайта и QR-код каждого здания вместе с текстом таблички.</p>
+  </section>
+
+  <div class="panel">
+    <label for="base">Адрес сайта (после публикации)</label>
+    <div class="row">
+      <input id="base" type="url" inputmode="url" placeholder="https://ваш-логин.github.io/belarus-miniatures/" autocomplete="off">
+      <button class="btn primary" id="go" type="button">Создать</button>
+      <button class="btn" id="print" type="button">Печать</button>
+    </div>
+    <p class="warn" id="warn" hidden></p>
+    <p class="note" style="margin-bottom:0">QR должен быть не меньше 2×2 см на табличке. Перед печатью всей партии проверьте один код телефоном.</p>
+  </div>
+
+  <div class="plaques" id="out"></div>
+</main>
+
+<footer>
+  <div class="wrap">Библиотека QR загружается из интернета (jsDelivr), поэтому для этой страницы нужен доступ в сеть.</div>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>if (typeof qrcode !== "function") { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"><\/script>'); }</script>
+<script>
+(function () {
+  var baseInput = $("#base"), out = $("#out"), warn = $("#warn");
+
+  // Подставляем адрес текущей страницы, если сайт уже опубликован
+  if (/^https?:/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname)) {
+    baseInput.value = location.href.replace(/[?#].*$/, "").replace(/\/[^\/]*$/, "/");
+  }
+
+  function cleanBase() {
+    var v = baseInput.value.trim();
+    if (!v) return "";
+    if (!/^https?:\/\//i.test(v)) v = "https://" + v;
+    v = v.replace(/[?#].*$/, "").replace(/\/(index|building|qr)\.html$/i, "");
+    return v.replace(/\/+$/, "");
+  }
+
+  function qrSvg(text) {
+    var qr = qrcode(0, "M");
+    qr.addData(text, "Byte");
+    qr.make();
+    var n = qr.getModuleCount(), m = 4, d = "";
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) d += "M" + (c + m) + " " + (r + m) + "h1v1h-1z";
+    }
+    var s = n + 2 * m;
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 ' + s + " " + s +
+      '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+  }
+
+  function save(blob, name) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  function downloadSvg(svg, name) { save(new Blob([svg], { type: "image/svg+xml" }), name + ".svg"); }
+
+  function downloadPng(svg, name) {
+    var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement("canvas");
+      c.width = c.height = 1000;
+      var x = c.getContext("2d");
+      x.imageSmoothingEnabled = false;
+      x.drawImage(img, 0, 0, 1000, 1000);
+      c.toBlob(function (b) { save(b, name + ".png"); URL.revokeObjectURL(url); });
+    };
+    img.src = url;
+  }
+
+  var svgs = {};
+
+  function plaque(key, title, meta, text, url) {
+    var svg = qrSvg(url);
+    svgs[key] = svg;
+    return '<article class="plaque"><div><div class="pl-brand">Беларусь в масштабе</div><h3>' + esc(title) + "</h3>" +
+      (meta ? '<div class="pl-meta">' + esc(meta) + "</div>" : "") + "<p>" + esc(text) + "</p></div>" +
+      '<div class="pl-qr">' + svg + "<small>" + esc(url) + "</small></div>" +
+      '<div class="pl-actions"><button class="btn" data-k="' + esc(key) + '" data-t="png">Скачать PNG</button>' +
+      '<button class="btn" data-k="' + esc(key) + '" data-t="svg">Скачать SVG</button></div></article>';
+  }
+
+  function build() {
+    var base = cleanBase();
+    warn.hidden = true;
+    if (!base) { out.innerHTML = ""; return; }
+    if (/localhost|127\.0\.0\.1|^file:/i.test(base)) {
+      warn.hidden = false;
+      warn.textContent = "Адрес localhost откроется только на вашем компьютере. Введите адрес опубликованного сайта.";
+    }
+    svgs = {};
+    var html = plaque("site", "Сайт парка", "", "Все миниатюры, поиск и планируемые здания.", base + "/");
+    BUILDINGS.forEach(function (b) {
+      html += plaque(b.id, b.name, metaLine(b), b.short, base + "/building.html?id=" + encodeURIComponent(b.id));
+    });
+    out.innerHTML = html;
+  }
+
+  out.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-k]");
+    if (!b) return;
+    var k = b.getAttribute("data-k");
+    if (b.getAttribute("data-t") === "svg") downloadSvg(svgs[k], k); else downloadPng(svgs[k], k);
+  });
+
+  $("#go").addEventListener("click", build);
+  baseInput.addEventListener("keydown", function (e) { if (e.key === "Enter") build(); });
+  $("#print").addEventListener("click", function () { window.print(); });
+
+  if (typeof qrcode !== "function") {
+    warn.hidden = false;
+    warn.textContent = "Не удалось загрузить библиотеку QR-кодов. Проверьте интернет и обновите страницу.";
+  } else if (baseInput.value) {
+    build();
+  }
+})();
+</script>
+</body>
+</html>

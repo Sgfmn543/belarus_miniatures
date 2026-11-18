@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Беларусь в масштабе</title>
+<meta name="description" content="Страница здания парка миниатюр «Беларусь в масштабе».">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html">Беларусь в масштабе</a>
+    <nav>
+      <a href="index.html#miniatures">Все миниатюры</a>
+      <a href="index.html#planned">Планируются</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+
+<footer>
+  <div class="wrap"><a href="index.html">Беларусь в масштабе</a> · парк миниатюр</div>
+</footer>
+
+<div class="lb" id="lb" role="dialog" aria-label="Фотография"><img alt=""></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  var id = new URLSearchParams(location.search).get("id");
+  var idx = -1;
+  BUILDINGS.forEach(function (b, i) { if (b.id === id) idx = i; });
+  var app = $("#app");
+
+  if (idx === -1) {
+    app.innerHTML = '<div class="empty"><h2>Здание не найдено</h2><p><a class="btn primary" href="index.html#miniatures">Перейти ко всем миниатюрам</a></p></div>';
+    return;
+  }
+
+  var b = BUILDINGS[idx];
+  document.title = b.name + " – Беларусь в масштабе";
+  var md = document.querySelector('meta[name="description"]');
+  if (md) md.setAttribute("content", b.short);
+
+  function fact(label, value) {
+    return value ? "<div><small>" + esc(label) + "</small><b>" + esc(value) + "</b></div>" : "";
+  }
+
+  function gallery(title, list) {
+    var items = photoList(list);
+    if (!items.length) return "";
+    return "<h2 style='margin-top:32px;font-size:1.4rem'>" + esc(title) + '</h2><div class="gallery">' +
+      items.map(function (p) {
+        return '<figure><button type="button" data-src="' + esc(p.src) + '"><img loading="lazy" src="' + esc(p.src) +
+          '" alt="' + esc(p.caption || b.name) + '"></button>' +
+          (p.caption ? "<figcaption>" + esc(p.caption) + "</figcaption>" : "") + "</figure>";
+      }).join("") + "</div>";
+  }
+
+  var prev = BUILDINGS[(idx + BUILDINGS.length - 1) % BUILDINGS.length];
+  var next = BUILDINGS[(idx + 1) % BUILDINGS.length];
+  var noPhotos = !photoList(b.photos).length && !photoList(b.archive).length;
+
+  app.innerHTML =
+    '<div class="crumbs"><a href="index.html#miniatures">← Все миниатюры</a></div>' +
+    '<div class="b-head">' + badgeHTML(b) + "<h1>" + esc(b.name) + '</h1><p class="meta">' + esc(metaLine(b)) + "</p></div>" +
+    '<div class="b-cover">' + coverHTML(b, true) + "</div>" +
+    '<div class="facts">' + fact("Город", b.city) + fact("Год", b.year) + fact("Стиль", b.style) +
+      fact("Состояние", STATUS_LABEL[b.status]) + "</div>" +
+    '<div class="b-text"><p>' + esc(b.desc) + "</p></div>" +
+    gallery("Фотографии", b.photos) +
+    gallery("Архивные фотографии", b.archive) +
+    (noPhotos ? '<p class="note">Фотографии этого здания скоро появятся.</p>' : "") +
+    '<div class="pn"><a class="btn" href="' + buildingUrl(prev) + '">← ' + esc(prev.name) +
+    '</a><a class="btn" href="' + buildingUrl(next) + '">' + esc(next.name) + " →</a></div>";
+
+  // Просмотр фото на весь экран
+  var lb = $("#lb"), lbImg = $("img", lb);
+  app.addEventListener("click", function (e) {
+    var btn = e.target.closest(".gallery button");
+    if (!btn) return;
+    lbImg.src = btn.getAttribute("data-src");
+    lb.classList.add("open");
+  });
+  lb.addEventListener("click", function () { lb.classList.remove("open"); lbImg.removeAttribute("src"); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") lb.classList.remove("open");
+  });
+})();
+</script>
+</body>
+</html>
