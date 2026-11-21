@@ -26,6 +26,7 @@
 </footer>
 
 <div class="lb" id="lb" role="dialog" aria-label="Фотография"><img alt=""></div>
+<div class="m3d" id="m3d" role="dialog" aria-label="3D-модель"></div>
 
 <script src="data.js"></script>
 <script src="app.js"></script>
@@ -90,8 +91,71 @@
     gallery("Фотографии", b.photos) +
     gallery("Архивные фотографии", b.archive) +
     '<p class="note" id="nophotos"' + (noPhotos ? "" : " hidden") + '>Фотографии этого здания скоро появятся.</p>' +
+    '<div class="view3d" id="view3d" hidden><h2 style="margin-top:32px;font-size:1.4rem">3D-модель</h2>' +
+      '<p class="note" style="margin:6px 0 12px">Откроется объёмная модель: её можно вращать и приближать.</p>' +
+      '<button class="btn primary" id="open3d" type="button">Смотреть в 3D</button></div>' +
     '<div class="pn"><a class="btn" href="' + buildingUrl(prev) + '">← ' + esc(prev.name) +
     '</a><a class="btn" href="' + buildingUrl(next) + '">' + esc(next.name) + " →</a></div>";
+
+  // ----- 3D-модель -----
+  // Файл ищется как models/<id>.glb. Если он есть, показывается кнопка «Смотреть в 3D».
+  var modelUrl = b.model || ("models/" + b.id + ".glb");
+  var m3d = $("#m3d");
+  var VIEWER_SRC = [
+    "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js",
+    "https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"
+  ];
+
+  fetch(modelUrl, { method: "HEAD" }).then(function (r) {
+    if (r.ok) $("#view3d").hidden = false;
+  }).catch(function () {});
+
+  function loadViewer(ok, fail) {
+    if (window.customElements && customElements.get("model-viewer")) return ok();
+    (function next(i) {
+      if (i >= VIEWER_SRC.length) return fail();
+      var s = document.createElement("script");
+      s.type = "module";
+      s.src = VIEWER_SRC[i];
+      s.onload = function () { customElements.whenDefined("model-viewer").then(ok); };
+      s.onerror = function () { s.remove(); next(i + 1); };
+      document.head.appendChild(s);
+    })(0);
+  }
+
+  function open3d() {
+    m3d.innerHTML =
+      '<div class="m3d-bar"><b>' + esc(b.name) + '</b><button type="button" class="btn" id="close3d">Закрыть ✕</button></div>' +
+      '<div class="m3d-stage" id="stage3d"><p class="m3d-msg" id="msg3d">Загрузка модели…</p></div>' +
+      '<p class="m3d-hint">Вращение: мышь или палец. Приближение: колесо мыши или два пальца.</p>';
+    m3d.classList.add("open");
+    document.body.style.overflow = "hidden";
+    var msg = $("#msg3d"), stage = $("#stage3d");
+    loadViewer(function () {
+      var mv = document.createElement("model-viewer");
+      mv.setAttribute("src", modelUrl);
+      mv.setAttribute("alt", "3D-модель: " + b.name);
+      mv.setAttribute("camera-controls", "");
+      mv.setAttribute("auto-rotate", "");
+      mv.setAttribute("shadow-intensity", "1");
+      mv.setAttribute("touch-action", "pan-y");
+      mv.addEventListener("load", function () { msg.hidden = true; });
+      mv.addEventListener("error", function () { msg.textContent = "Не удалось загрузить модель."; });
+      stage.appendChild(mv);
+    }, function () {
+      msg.textContent = "Не удалось загрузить просмотрщик 3D. Проверьте интернет и попробуйте ещё раз.";
+    });
+  }
+
+  function close3d() {
+    m3d.classList.remove("open");
+    m3d.innerHTML = "";
+    document.body.style.overflow = "";
+  }
+
+  $("#open3d").addEventListener("click", open3d);
+  m3d.addEventListener("click", function (e) { if (e.target.closest("#close3d")) close3d(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") close3d(); });
 
   // Просмотр фото на весь экран
   var lb = $("#lb"), lbImg = $("img", lb);
