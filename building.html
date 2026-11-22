@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Беларусь в масштабе</title>
-<meta name="description" content="Страница здания парка миниатюр «Беларусь в масштабе».">
+<title>Парк миниатюр Беларуси</title>
+<meta name="description" content="Страница здания парка миниатюр Беларуси.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="index.html">Беларусь в масштабе</a>
+    <a class="brand" href="index.html">Парк миниатюр Беларуси</a>
     <nav>
       <a href="index.html#miniatures">Все миниатюры</a>
       <a href="index.html#planned">Планируются</a>
@@ -22,7 +22,7 @@
 <main class="wrap" id="app"></main>
 
 <footer>
-  <div class="wrap"><a href="index.html">Беларусь в масштабе</a> · парк миниатюр</div>
+  <div class="wrap"><a href="index.html">Парк миниатюр Беларуси</a></div>
 </footer>
 
 <div class="lb" id="lb" role="dialog" aria-label="Фотография"><img alt=""></div>
@@ -43,7 +43,7 @@
   }
 
   var b = BUILDINGS[idx];
-  document.title = b.name + " – Беларусь в масштабе";
+  document.title = b.name + " – Парк миниатюр Беларуси";
   var md = document.querySelector('meta[name="description"]');
   if (md) md.setAttribute("content", b.short);
 
@@ -94,8 +94,63 @@
     '<div class="view3d" id="view3d" hidden><h2 style="margin-top:32px;font-size:1.4rem">3D-модель</h2>' +
       '<p class="note" style="margin:6px 0 12px">Откроется объёмная модель: её можно вращать и приближать.</p>' +
       '<button class="btn primary" id="open3d" type="button">Смотреть в 3D</button></div>' +
+    locationHTML() +
     '<div class="pn"><a class="btn" href="' + buildingUrl(prev) + '">← ' + esc(prev.name) +
     '</a><a class="btn" href="' + buildingUrl(next) + '">' + esc(next.name) + " →</a></div>";
+
+  // ----- Как добраться (карты) -----
+  // Показывается, если у здания в data.js заданы lat и lon.
+  function hasCoords() { return typeof b.lat === "number" && typeof b.lon === "number"; }
+  function locationHTML() {
+    if (!hasCoords()) return "";
+    return '<section class="loc"><div class="eyebrow">Локация</div><h2>Как добраться</h2>' +
+      (b.address ? '<p class="loc-addr"><b>Адрес:</b> ' + esc(b.address) + "</p>" : "") +
+      '<p class="loc-coords">Координаты: <button type="button" class="coords" id="copyCoords" title="Скопировать координаты">' +
+        b.lat.toFixed(6) + ", " + b.lon.toFixed(6) + "</button></p>" +
+      '<div class="tabs" role="tablist" aria-label="Карта">' +
+        '<button type="button" role="tab" data-map="y" aria-selected="true">Яндекс</button>' +
+        '<button type="button" role="tab" data-map="g" aria-selected="false">Google</button></div>' +
+      '<div class="map-frame" id="mapFrame"></div>' +
+      '<a class="btn primary" id="mapOpen" target="_blank" rel="noopener"></a></section>';
+  }
+
+  if (hasCoords()) {
+    var LAT = b.lat, LON = b.lon;
+    var MAPS = {
+      y: {
+        embed: "https://yandex.ru/map-widget/v1/?ll=" + LON + "%2C" + LAT + "&z=17&pt=" + LON + "%2C" + LAT + "%2Cpm2rdm",
+        open: "https://yandex.ru/maps/?pt=" + LON + "," + LAT + "&z=17&l=map",
+        label: "Открыть в Яндекс.Картах"
+      },
+      g: {
+        embed: "https://maps.google.com/maps?q=" + LAT + "," + LON + "&z=17&output=embed",
+        open: "https://www.google.com/maps/search/?api=1&query=" + LAT + "," + LON,
+        label: "Открыть в Google Картах"
+      }
+    };
+    var showMap = function (k) {
+      var m = MAPS[k];
+      $("#mapFrame").innerHTML = '<iframe src="' + m.embed + '" title="Карта: ' + esc(b.name) +
+        '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>';
+      var a = $("#mapOpen");
+      a.href = m.open;
+      a.textContent = m.label;
+      var tabs = document.querySelectorAll(".tabs button");
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].setAttribute("aria-selected", tabs[i].getAttribute("data-map") === k ? "true" : "false");
+      }
+    };
+    showMap("y");
+    $(".tabs").addEventListener("click", function (e) {
+      var t = e.target.closest("button[data-map]");
+      if (t) showMap(t.getAttribute("data-map"));
+    });
+    $("#copyCoords").addEventListener("click", function () {
+      var btn = this, text = b.lat.toFixed(6) + ", " + b.lon.toFixed(6), old = btn.textContent;
+      function done() { btn.textContent = "Скопировано"; setTimeout(function () { btn.textContent = old; }, 1500); }
+      try { navigator.clipboard.writeText(text).then(done, function () {}); } catch (e) {}
+    });
+  }
 
   // ----- 3D-модель -----
   // Файл ищется как models/<id>.glb. Если он есть, показывается кнопка «Смотреть в 3D».

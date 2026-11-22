@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QR-коды и таблички – Беларусь в масштабе</title>
+<title>QR-коды и таблички – Парк миниатюр Беларуси</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="style.css">
 <style>
@@ -36,7 +36,7 @@
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="index.html">Беларусь в масштабе</a>
+    <a class="brand" href="index.html">Парк миниатюр Беларуси</a>
     <nav><a href="index.html">На сайт</a></nav>
   </div>
 </header>
@@ -129,7 +129,7 @@
   function plaque(key, title, meta, text, url) {
     var svg = qrSvg(url);
     svgs[key] = svg;
-    return '<article class="plaque"><div><div class="pl-brand">Беларусь в масштабе</div><h3>' + esc(title) + "</h3>" +
+    return '<article class="plaque"><div><div class="pl-brand">Парк миниатюр Беларуси</div><h3>' + esc(title) + "</h3>" +
       (meta ? '<div class="pl-meta">' + esc(meta) + "</div>" : "") + "<p>" + esc(text) + "</p></div>" +
       '<div class="pl-qr">' + svg + "<small>" + esc(url) + "</small></div>" +
       '<div class="pl-actions"><button class="btn" data-k="' + esc(key) + '" data-t="png">Скачать PNG</button>' +

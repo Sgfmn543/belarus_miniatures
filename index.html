@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Беларусь в масштабе – парк миниатюр</title>
-<meta name="description" content="Парк миниатюр «Беларусь в масштабе»: архитектурные памятники страны, поиск по названию и планируемые миниатюры.">
+<title>Парк миниатюр Беларуси</title>
+<meta name="description" content="Парк миниатюр Беларуси: архитектурные памятники страны, поиск по названию и планируемые миниатюры.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="index.html">Беларусь в масштабе</a>
+    <a class="brand" href="index.html">Парк миниатюр Беларуси</a>
     <nav>
       <a href="#miniatures">Миниатюры</a>
       <a href="#planned">Планируются</a>
@@ -23,8 +23,8 @@
 <main>
   <section class="hero">
     <div class="wrap">
-      <h1>Беларусь в масштабе</h1>
-      <p>Парк миниатюр архитектурных памятников Беларуси: сохранившихся, восстановленных и утраченных.</p>
+      <h1>Парк миниатюр Беларуси</h1>
+      <p>Архитектурные памятники Беларуси в миниатюре: сохранившиеся, восстановленные и утраченные.</p>
       <div class="stats" id="stats"></div>
     </div>
   </section>
@@ -62,7 +62,7 @@
 </main>
 
 <footer>
-  <div class="wrap">Беларусь в масштабе · парк миниатюр</div>
+  <div class="wrap">Парк миниатюр Беларуси</div>
 </footer>
 
 <script src="data.js"></script>
@@ -134,8 +134,8 @@
     $("#formWrap").hidden = false;
     $("#formLink").href = VOTE_FORM_URL;
   } else {
-    $("#voteNote").hidden = false;
-    $("#voteNote").textContent = "";
+    $("#voteNote").hidden = true;
+    $("#voteNote").textContent = "Ваш выбор сохраняется только в этом браузере. Общий подсчёт голосов подключается через форму (см. README).";
   }
 
   $("#plannedGrid").addEventListener("click", function (e) {
